@@ -289,3 +289,26 @@ git push origin main
 git push -u origin main
 git status
 C:\Users\hp1\Documents\pop
+cd C:\Users\hp1\Documents\pop
+ls
+cd C:Usershp1Desktopcertificates
+ls
+git status
+git add ../.bash_history
+git status
+git commit -m "haha"
+git status
+git push origin main
+git clone https://github.com/saifgrawish/bom
+git status
+git add  ../down1/
+git add ../.bash_logout
+git status
+git commit -m "i"i did it"
+
+
+
+
+
+
+git status
