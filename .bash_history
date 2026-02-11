@@ -152,3 +152,140 @@ git branch
 git remote -v
 git push  ../.bash_history
 git commit  ../.bash_history
+git commit  git config --global user.email "you@example.com"
+git status
+git commit .bash_history
+git push .bash_history
+ls
+cd down1
+ls
+sudo rm soso
+git status
+git add  ../.bash_history
+git status
+git commit -m "hdhdh"
+git staus
+git status
+git push orgin master
+git push down1 master
+git init
+git branch
+git branch -m down1
+ls
+cd soso
+ls
+clear
+git status
+git remote -v
+mkdir my-new-project
+ls
+cd mkdir my-new-project
+cd  my-new-project
+git init
+git add  my-new-project
+git satus
+git staus
+git status
+git push -m  my-new-project
+git push  my-new-project
+git push  my-new-project master
+git status
+git push  my-new-project soso
+ls
+cd down1
+ls
+cd soso
+ls
+cd  my-new-project
+ls
+mkdir dd
+ls
+git status
+git push  my-new-project master
+git push error: src refspec master does not match any
+error: failed to push some refs to 'my-new-project'
+git push my-new-project main
+git add dd
+ls
+git status
+git commit -m "jdjdj"
+git push my-new-project master
+git remote add origin https://github.com/YourUsername/my-new-project.git
+git branch -M main
+git commit "i did this"
+git commit -m "i did this"
+git push -u origin main
+git commit -m "i did this"
+clear
+git init
+ls
+git add .dd
+git add dd
+git commit -m "My first commit"
+git remote add origin https://github.com/saifgrawish/my-new-project.git
+git branch -M main
+git push -u origin main
+ls
+cd down1
+cd soso
+ls
+cd my-new-project
+git init
+git add dd
+git commit -m "My first commit"
+git remote add origin https://github.com/Saifgrawish/my-new-project.git
+git branch -M main
+git push -u origin main
+git push -u origin my-new-project
+git status
+git remote add origin https://github.com/Saifgrawish/myproject.git
+git branch -M main
+git push -u origin main
+git remote add origin https://github.com/Saifgrawish/myproject.git
+clear
+git remote add origin https://github.com/Saifgrawish/myproject.git
+git branch -M main
+git push -u origin main
+Saifgrawish
+sudo rm down1
+sudeo rm down1
+sudo rm down1
+sudo rm down
+rm down
+Saifgrawish
+git remote add origin https://github.com/saifgrawish/myproject.git
+git branch -M main
+git push -u origin main
+git push -u orgin main
+git push -u origin main
+git remote -v
+git push -m origin master
+git push -u origin main
+git remote -v
+git pull -u origin
+git pull -u orgin main
+git push orgin master
+git push origin master
+git push origin main
+git config --global --unset credential.helper
+git push origin main
+git clone https://github.com/saifgrawish/myproject
+cd myproject
+ls
+mkdir sos
+ls
+git status
+cd myproject
+git status
+git add sos
+git status
+ls
+git add .sos
+git add sos
+git commit -m "what"
+git push origin main
+git push -u origin min
+git push origin main
+git push -u origin main
+git status
+C:\Users\hp1\Documents\pop
