@@ -321,3 +321,233 @@ git remote -v
 git remote set-url origin https://github.com/saifgrawish/bom
 git remote -v
 git status
+git remote -v
+git status
+git add .bash_history
+git commit -m "nigga"
+git push origin main
+print("hi")
+print(ji)
+git remote -v
+git status
+git pull origin
+ls
+git status
+ls
+cd C:Usershp1Desktopcertificates
+git pull origin
+git pull origin main
+ls
+git status
+cd C:Usershp1Desktopcertificates
+git status
+mkdir bbbb
+git status
+clear
+git remote -v
+git status
+git pull origin main
+cd bom
+ls
+cd C:Usershp1Desktopcertificates
+ls
+cd bom
+ls
+git status
+ls
+clear
+cd ..
+cd .. 
+ls
+rm bbb
+ls
+cd down
+ls
+cd .. 
+cd down1
+ls
+cd soso
+ls
+cd my-new-project
+ls
+cd dd
+ls
+rm dd
+cd ..
+rm dd
+cd..
+cd ..
+ls
+cd ..
+ls
+git remote -v
+git remote set-url origin https://github.com/saifgrawish/ai-text-tovoice-model-in-telegram
+git remote -v
+git status
+git add Documents
+ls
+cd ..
+ls
+cd ..
+ls
+cd ..
+ls
+cd home
+ls
+cd ubuntu
+ls
+cd C:Usershp1Desktopcertificates
+cd ..
+ls
+cd C:\Users\hp1\Documents
+cd C:\Documents
+cd C:
+cd ..
+cd C:\Users\hp1\Documents
+cd ..
+cd C:\Users\hp1\Documents
+cd ..
+cd C:\Users\hp1\Documents
+cd C:Usershp1Documents
+cd C:/Users/hp1/Documents
+cd /c/Users/hp1/Documents
+cd "/c/Users/hp1/Documents"
+cd "C:/Users/hp1/Documents"
+cd C:\\Users\\hp1\\Documents
+pwd
+ls
+cd usr
+ls
+pwd
+cd ..
+ls
+cd home
+pwd
+ls
+cd C:\\Users\\hp1\\Documents
+cd ubuntu
+ls
+cd ..
+mklink  C:\\Users\\hp1\\Documents
+ln  C:\\Users\\hp1\\Documents
+ls
+cd  C:\\Users\\hp1\\Documents
+cd ..
+ls
+cd usr
+ls
+cd ..
+ls
+cd "D:\program code.py"
+git status
+ls
+git add "C:\Users\hp1\Documents\program code.py"
+git clone https://github.com/saifgrawish/ai-text-tovoice-model-in-telegram
+git pull origin main
+git remote -v
+cd home
+ls
+cd ubuntu
+ls
+git remote -v
+git pull origin main
+git clone https://github.com/saifgrawish/ai-text-tovoice-model-in-telegram
+git status
+git add "C:\Users\hp1\Documents\program code.py"
+git add https://github.com/saifgrawish/ai-text-tovoice-model-in-telegram
+git add C:\Users\hp1\Documents\program code.py
+pwd
+ls
+cd  ai-text-tovoice-model-in-telegram
+ls
+git status
+git pull origin main
+git pull origin master
+git branch -M main
+git pull origin main
+git pull -u origin main 
+clear
+git init
+ls
+git init D:\
+ls
+cd D:
+ls
+cd "D:\program code.py"
+cd ..
+git status
+cd ..
+ls
+git init D:
+ls
+cd D:
+ls
+cd ..
+git init "D:\program code.py"
+ls
+cd D:\program code.py
+cd 'D:\program code.py'
+ls
+lsls
+ls
+lsl
+s
+sls
+ls
+cd..
+cd ..
+cd ubuntu
+ls
+cd C:Usershp1Desktopcertificates
+ls
+cd ..
+ls
+git status
+git init "C:\Users\hp1\Desktop\certificates\program code.py"
+ls
+giit status
+git status
+git add "C:\\Users\\hp1\\Desktop\\certificates\\program code.py/"
+git add C:\\Users\\hp1\\Desktop\\certificates\\program code.py/
+git add  "D:\\program code.py/"
+cd  C:Usershp1Desktopcertificates/
+git status
+git add "../D:\\program code.py/"
+git add ../D://program code.py/
+cd D:program code.py
+cd ..
+ls
+cd ai-text-tovoice-model-in-telegram
+ls
+git status
+git init "C:\Users\hp1\Desktop\certificates\program code.py"
+ls
+git status
+git add "C:\\Users\\hp1\\Desktop\\certificates\\program code.py/"
+git add  D:/
+git pull origin main
+ls
+git status
+cd ..
+ls
+git status
+git add  .bashrc
+ls
+git status
+git commit "blabla"
+git status
+git commit "djjd"
+git commit "kkk"
+git comit "k"
+git commit "fffff"
+git commit  .bashrc "ff'
+
+
+
+
+
+
+
+
+
+
