@@ -1,0 +1,577 @@
+"""
+AI Story Teller Bot with TTS - Google Colab Edition
+Complete code to run in Google Colab with T4 GPU
+"""
+
+# ============================================================================
+# INSTALLATION CELL - Run this first
+# ============================================================================
+
+# Install required packages
+!pip install -q edge-tts python-telegram-bot==20.7 nest-asyncio
+!pip install -q transformers accelerate bitsandbytes torch
+!apt-get install -y ffmpeg > /dev/null 2>&1
+
+print("✅ All packages installed successfully!")
+
+# ============================================================================
+# MAIN CODE CELL - Run this after installation
+# ============================================================================
+
+import os
+import logging
+import asyncio
+import edge_tts
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+import tempfile
+import nest_asyncio
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+
+# Fix for Colab's event loop
+nest_asyncio.apply()
+
+# Setup logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# VOICE CONFIGURATION
+# ============================================================================
+
+VOICES = {
+    # English
+    'en-US-AriaNeural': '🇺🇸 Aria (Female, US)',
+    'en-US-GuyNeural': '🇺🇸 Guy (Male, US)',
+    'en-US-JennyNeural': '🇺🇸 Jenny (Female, US)',
+    'en-GB-SoniaNeural': '🇬🇧 Sonia (Female, UK)',
+    'en-GB-RyanNeural': '🇬🇧 Ryan (Male, UK)',
+    'en-AU-NatashaNeural': '🇦🇺 Natasha (Female, AU)',
+    
+    # Spanish
+    'es-ES-ElviraNeural': '🇪🇸 Elvira (Female, Spain)',
+    'es-ES-AlvaroNeural': '🇪🇸 Alvaro (Male, Spain)',
+    'es-MX-DaliaNeural': '🇲🇽 Dalia (Female, Mexico)',
+    
+    # French
+    'fr-FR-DeniseNeural': '🇫🇷 Denise (Female)',
+    'fr-FR-HenriNeural': '🇫🇷 Henri (Male)',
+    
+    # German
+    'de-DE-KatjaNeural': '🇩🇪 Katja (Female)',
+    'de-DE-ConradNeural': '🇩🇪 Conrad (Male)',
+    
+    # Italian
+    'it-IT-ElsaNeural': '🇮🇹 Elsa (Female)',
+    'it-IT-DiegoNeural': '🇮🇹 Diego (Male)',
+    
+    # Portuguese
+    'pt-BR-FranciscaNeural': '🇧🇷 Francisca (Female, Brazil)',
+    'pt-PT-RaquelNeural': '🇵🇹 Raquel (Female, Portugal)',
+    
+    # Russian
+    'ru-RU-SvetlanaNeural': '🇷🇺 Svetlana (Female)',
+    'ru-RU-DmitryNeural': '🇷🇺 Dmitry (Male)',
+    
+    # Arabic
+    'ar-SA-ZariyahNeural': '🇸🇦 Zariyah (Female)',
+    'ar-EG-SalmaNeural': '🇪🇬 Salma (Female, Egypt)',
+    
+    # Chinese
+    'zh-CN-XiaoxiaoNeural': '🇨🇳 Xiaoxiao (Female)',
+    'zh-CN-YunxiNeural': '🇨🇳 Yunxi (Male)',
+    
+    # Japanese
+    'ja-JP-NanamiNeural': '🇯🇵 Nanami (Female)',
+    'ja-JP-KeitaNeural': '🇯🇵 Keita (Male)',
+    
+    # Korean
+    'ko-KR-SunHiNeural': '🇰🇷 SunHi (Female)',
+    'ko-KR-InJoonNeural': '🇰🇷 InJoon (Male)',
+    
+    # Hindi
+    'hi-IN-SwaraNeural': '🇮🇳 Swara (Female)',
+    
+    # Turkish
+    'tr-TR-EmelNeural': '🇹🇷 Emel (Female)',
+    
+    # Dutch
+    'nl-NL-ColetteNeural': '🇳🇱 Colette (Female)',
+    
+    # Polish
+    'pl-PL-ZofiaNeural': '🇵🇱 Zofia (Female)',
+}
+
+# Language mapping
+LANGUAGES = {
+    'english': 'en-US-AriaNeural',
+    'spanish': 'es-ES-ElviraNeural',
+    'french': 'fr-FR-DeniseNeural',
+    'german': 'de-DE-KatjaNeural',
+    'italian': 'it-IT-ElsaNeural',
+    'portuguese': 'pt-BR-FranciscaNeural',
+    'russian': 'ru-RU-SvetlanaNeural',
+    'arabic': 'ar-EG-SalmaNeural',
+    'chinese': 'zh-CN-XiaoxiaoNeural',
+    'japanese': 'ja-JP-NanamiNeural',
+    'korean': 'ko-KR-SunHiNeural',
+    'hindi': 'hi-IN-SwaraNeural',
+    'turkish': 'tr-TR-EmelNeural',
+    'dutch': 'nl-NL-ColetteNeural',
+    'polish': 'pl-PL-ZofiaNeural',
+}
+
+# ============================================================================
+# LLM SETUP - Story Generation Model
+# ============================================================================
+
+print("📚 Loading Story Generation Model...")
+print("⏳ This may take a few minutes on first run...")
+
+# Using Qwen 2.5 1.5B - Perfect for T4 GPU and excellent at storytelling
+MODEL_NAME = "Qwen/Qwen2.5-1.5B-Instruct"
+
+# Quantization config for efficient GPU usage
+quantization_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4"
+)
+
+# Load tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForCausalLM.from_pretrained(
+    MODEL_NAME,
+    quantization_config=quantization_config,
+    device_map="auto",
+    trust_remote_code=True
+)
+
+print("✅ Model loaded successfully!")
+print(f"📊 Model: {MODEL_NAME}")
+print(f"💾 Device: {next(model.parameters()).device}")
+
+# ============================================================================
+# STORY GENERATION FUNCTION
+# ============================================================================
+
+def generate_story(prompt, language="English", max_length=800):
+    """Generate a story using the LLM."""
+    
+    # Create language-specific system prompt
+    system_prompts = {
+        "English": "You are a creative storyteller. Write engaging, imaginative stories that captivate readers.",
+        "Spanish": "Eres un narrador creativo. Escribe historias atractivas e imaginativas que cautiven a los lectores.",
+        "French": "Vous êtes un conteur créatif. Écrivez des histoires engageantes et imaginatives qui captivent les lecteurs.",
+        "German": "Sie sind ein kreativer Geschichtenerzähler. Schreiben Sie fesselnde, fantasievolle Geschichten.",
+        "Italian": "Sei un narratore creativo. Scrivi storie coinvolgenti e fantasiose che affascinano i lettori.",
+        "Portuguese": "Você é um contador de histórias criativo. Escreva histórias envolventes e imaginativas.",
+        "Russian": "Вы креативный рассказчик. Пишите увлекательные, творческие истории.",
+        "Arabic": "أنت راوي قصص مبدع. اكتب قصصاً جذابة وخيالية تأسر القراء.",
+        "Chinese": "你是一个富有创造力的讲故事的人。写引人入胜、富有想象力的故事。",
+        "Japanese": "あなたは創造的なストーリーテラーです。読者を魅了する魅力的で想像力豊かな物語を書いてください。",
+        "Korean": "당신은 창의적인 스토리텔러입니다. 독자를 사로잡는 매력적이고 상상력이 풍부한 이야기를 쓰세요.",
+        "Hindi": "आप एक रचनात्मक कहानीकार हैं। पाठकों को मंत्रमुग्ध करने वाली आकर्षक कहानियाँ लिखें।",
+        "Turkish": "Yaratıcı bir hikaye anlatıcısısınız. Okuyucuları büyüleyen ilgi çekici hikayeler yazın.",
+        "Dutch": "Je bent een creatieve verteller. Schrijf boeiende, fantasierijke verhalen.",
+        "Polish": "Jesteś kreatywnym storytellerem. Pisz wciągające, pełne wyobraźni historie.",
+    }
+    
+    system_prompt = system_prompts.get(language, system_prompts["English"])
+    
+    # Format the conversation
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": prompt}
+    ]
+    
+    # Apply chat template
+    text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    # Tokenize
+    inputs = tokenizer([text], return_tensors="pt").to(model.device)
+    
+    # Generate
+    with torch.no_grad():
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_length,
+            temperature=0.8,
+            top_p=0.9,
+            top_k=50,
+            repetition_penalty=1.1,
+            do_sample=True,
+            pad_token_id=tokenizer.eos_token_id
+        )
+    
+    # Decode
+    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    # Extract only the assistant's response
+    if "assistant" in generated_text.lower():
+        story = generated_text.split("assistant")[-1].strip()
+    else:
+        story = generated_text[len(text):].strip()
+    
+    return story
+
+# ============================================================================
+# USER SESSION MANAGEMENT
+# ============================================================================
+
+user_settings = {}
+user_state = {}
+
+# ============================================================================
+# TELEGRAM BOT HANDLERS
+# ============================================================================
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send a message when the command /start is issued."""
+    user_id = update.effective_user.id
+    user_settings[user_id] = {
+        'voice': 'en-US-AriaNeural',
+        'language': 'English'
+    }
+    user_state[user_id] = 'idle'
+    
+    await update.message.reply_text(
+        '📖 *Welcome to AI Story Teller Bot!*\n\n'
+        'I can generate creative stories and narrate them in high-quality audio!\n\n'
+        '*Commands:*\n'
+        '/story - Generate a new story\n'
+        '/voice - Change voice\n'
+        '/language - Change story language\n'
+        '/help - Get help\n\n'
+        '✨ Ready to create amazing stories!',
+        parse_mode='Markdown'
+    )
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Send help message."""
+    await update.message.reply_text(
+        '*How to use:*\n\n'
+        '1️⃣ Use /story to start creating a story\n'
+        '2️⃣ Choose your preferred language\n'
+        '3️⃣ Select a voice for narration\n'
+        '4️⃣ Tell me what story you want\n'
+        '5️⃣ Receive your audio story!\n\n'
+        '*Features:*\n'
+        '📚 AI-powered story generation\n'
+        '🎙️ 30+ natural voices\n'
+        '🌍 15+ languages\n'
+        '🎧 Professional audio quality\n\n'
+        '*Example prompts:*\n'
+        '• "Tell me a story about a brave knight"\n'
+        '• "Create a sci-fi adventure story"\n'
+        '• "Write a bedtime story for kids"\n'
+        '• "Tell me a mystery story"',
+        parse_mode='Markdown'
+    )
+
+async def story_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Start the story generation flow."""
+    user_id = update.effective_user.id
+    user_state[user_id] = 'selecting_language'
+    
+    # Language selection keyboard
+    keyboard = [
+        [
+            InlineKeyboardButton("🇺🇸 English", callback_data="lang_English"),
+            InlineKeyboardButton("🇪🇸 Spanish", callback_data="lang_Spanish")
+        ],
+        [
+            InlineKeyboardButton("🇫🇷 French", callback_data="lang_French"),
+            InlineKeyboardButton("🇩🇪 German", callback_data="lang_German")
+        ],
+        [
+            InlineKeyboardButton("🇮🇹 Italian", callback_data="lang_Italian"),
+            InlineKeyboardButton("🇵🇹 Portuguese", callback_data="lang_Portuguese")
+        ],
+        [
+            InlineKeyboardButton("🇷🇺 Russian", callback_data="lang_Russian"),
+            InlineKeyboardButton("🇸🇦 Arabic", callback_data="lang_Arabic")
+        ],
+        [
+            InlineKeyboardButton("🇨🇳 Chinese", callback_data="lang_Chinese"),
+            InlineKeyboardButton("🇯🇵 Japanese", callback_data="lang_Japanese")
+        ],
+        [
+            InlineKeyboardButton("🇰🇷 Korean", callback_data="lang_Korean"),
+            InlineKeyboardButton("🇮🇳 Hindi", callback_data="lang_Hindi")
+        ]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        '🌍 *Step 1: Choose story language*\n\nSelect the language for your story:',
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+async def language_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle language selection."""
+    user_id = update.effective_user.id
+    
+    # Language selection keyboard
+    keyboard = [
+        [
+            InlineKeyboardButton("🇺🇸 English", callback_data="lang_English"),
+            InlineKeyboardButton("🇪🇸 Spanish", callback_data="lang_Spanish")
+        ],
+        [
+            InlineKeyboardButton("🇫🇷 French", callback_data="lang_French"),
+            InlineKeyboardButton("🇩🇪 German", callback_data="lang_German")
+        ],
+        [
+            InlineKeyboardButton("🇮🇹 Italian", callback_data="lang_Italian"),
+            InlineKeyboardButton("🇵🇹 Portuguese", callback_data="lang_Portuguese")
+        ]
+    ]
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        '🌍 *Choose story language:*',
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+async def voice_selection(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Show voice selection keyboard."""
+    user_id = update.effective_user.id
+    language = user_settings.get(user_id, {}).get('language', 'English')
+    
+    # Filter voices by language
+    lang_prefix = language[:2].lower()
+    filtered_voices = {k: v for k, v in VOICES.items() if k.startswith(lang_prefix) or k.startswith('en')}
+    
+    keyboard = []
+    row = []
+    for voice_id, voice_name in filtered_voices.items():
+        row.append(InlineKeyboardButton(voice_name[:30], callback_data=f"voice_{voice_id}"))
+        if len(row) == 2:
+            keyboard.append(row)
+            row = []
+    if row:
+        keyboard.append(row)
+    
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        '🎤 *Choose narration voice:*',
+        reply_markup=reply_markup,
+        parse_mode='Markdown'
+    )
+
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle button callbacks."""
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = update.effective_user.id
+    
+    if user_id not in user_settings:
+        user_settings[user_id] = {'voice': 'en-US-AriaNeural', 'language': 'English'}
+    
+    # Language selection
+    if query.data.startswith('lang_'):
+        language = query.data.split('lang_')[1]
+        user_settings[user_id]['language'] = language
+        
+        # Auto-set default voice for language
+        default_voice = LANGUAGES.get(language.lower(), 'en-US-AriaNeural')
+        user_settings[user_id]['voice'] = default_voice
+        
+        user_state[user_id] = 'selecting_voice'
+        
+        # Show voice selection
+        lang_prefix = language[:2].lower()
+        filtered_voices = {k: v for k, v in VOICES.items() if k.startswith(lang_prefix) or k.startswith('en')}
+        
+        keyboard = []
+        row = []
+        for voice_id, voice_name in list(filtered_voices.items())[:12]:
+            row.append(InlineKeyboardButton(voice_name[:30], callback_data=f"voice_{voice_id}"))
+            if len(row) == 2:
+                keyboard.append(row)
+                row = []
+        if row:
+            keyboard.append(row)
+        
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
+            f'✅ Language: *{language}*\n\n🎤 *Step 2: Choose voice for narration:*',
+            reply_markup=reply_markup,
+            parse_mode='Markdown'
+        )
+    
+    # Voice selection
+    elif query.data.startswith('voice_'):
+        voice_id = query.data.split('voice_')[1]
+        user_settings[user_id]['voice'] = voice_id
+        user_state[user_id] = 'awaiting_prompt'
+        
+        language = user_settings[user_id].get('language', 'English')
+        
+        await query.edit_message_text(
+            f'✅ Language: *{language}*\n'
+            f'✅ Voice: *{VOICES[voice_id]}*\n\n'
+            f'📝 *Step 3: Now tell me what story you want!*\n\n'
+            f'Example: "Tell me a story about a magical forest"\n\n'
+            f'Type your story prompt below:',
+            parse_mode='Markdown'
+        )
+
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle text messages based on user state."""
+    user_id = update.effective_user.id
+    text = update.message.text
+    
+    state = user_state.get(user_id, 'idle')
+    
+    if state == 'awaiting_prompt':
+        # User sent a story prompt
+        await generate_and_narrate_story(update, context, text)
+    else:
+        # Default behavior - treat as story prompt
+        await update.message.reply_text(
+            "💡 Please use /story to start creating a story, or use /help for more information."
+        )
+
+async def generate_and_narrate_story(update: Update, context: ContextTypes.DEFAULT_TYPE, prompt: str):
+    """Generate story and convert to audio."""
+    user_id = update.effective_user.id
+    
+    if user_id not in user_settings:
+        user_settings[user_id] = {'voice': 'en-US-AriaNeural', 'language': 'English'}
+    
+    voice = user_settings[user_id].get('voice', 'en-US-AriaNeural')
+    language = user_settings[user_id].get('language', 'English')
+    
+    # Send processing message
+    processing_msg = await update.message.reply_text(
+        "🤖 *Generating your story...*\n⏳ Please wait, this may take 30-60 seconds...",
+        parse_mode='Markdown'
+    )
+    
+    try:
+        # Generate story
+        story = generate_story(prompt, language=language, max_length=600)
+        
+        # Update message
+        await processing_msg.edit_text(
+            f"✅ *Story generated!*\n🎙️ *Converting to audio...*",
+            parse_mode='Markdown'
+        )
+        
+        # Check length
+        if len(story) > 3000:
+            story = story[:3000]
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+            output_path = tmp_file.name
+        
+        # Generate speech using edge-tts
+        communicate = edge_tts.Communicate(story, voice)
+        await communicate.save(output_path)
+        
+        # Send the story text first
+        story_preview = story[:500] + "..." if len(story) > 500 else story
+        await update.message.reply_text(
+            f"📖 *Your Story:*\n\n{story_preview}",
+            parse_mode='Markdown'
+        )
+        
+        # Send audio file
+        with open(output_path, 'rb') as audio:
+            await update.message.reply_audio(
+                audio=audio,
+                title=f"AI Story - {prompt[:30]}",
+                performer="AI Story Teller Bot",
+                caption=f"🎧 Voice: {VOICES[voice]}\n📚 Language: {language}\n📝 Length: {len(story)} characters"
+            )
+        
+        # Cleanup
+        os.remove(output_path)
+        await processing_msg.delete()
+        
+        # Reset state
+        user_state[user_id] = 'idle'
+        
+        # Offer to create another story
+        await update.message.reply_text(
+            "✨ *Story complete!*\n\nUse /story to create another one!",
+            parse_mode='Markdown'
+        )
+        
+    except Exception as e:
+        logger.error(f"Error generating story: {e}")
+        await processing_msg.edit_text(
+            f"❌ Error generating story. Please try again.\n\n"
+            f"Use /story to try again or /help for assistance.",
+            parse_mode='Markdown'
+        )
+        user_state[user_id] = 'idle'
+
+# ============================================================================
+# MAIN BOT FUNCTION
+# ============================================================================
+
+async def main():
+    """Start the bot."""
+    
+    # IMPORTANT: Replace with your bot token from BotFather
+    TOKEN = "8579361468:AAHtpItEv04gCQZnLr03qHpORtAeIORgwHk"  # ⚠️ CHANGE THIS!
+    
+    if TOKEN == "YOUR_BOT_TOKEN_HERE":
+        print("❌ ERROR: Please replace 'YOUR_BOT_TOKEN_HERE' with your actual bot token!")
+        print("Get your token from @BotFather on Telegram")
+        return
+    
+    # Create the Application
+    application = Application.builder().token(TOKEN).build()
+    
+    # Register handlers
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("story", story_command))
+    application.add_handler(CommandHandler("voice", voice_selection))
+    application.add_handler(CommandHandler("language", language_selection))
+    application.add_handler(CallbackQueryHandler(button_callback))
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+    
+    # Start the Bot
+    print("\n" + "="*60)
+    print("✅ AI Story Teller Bot is running!")
+    print("="*60)
+    print("📱 Go to Telegram and start chatting with your bot")
+    print("⚠️  Keep this cell running - do NOT stop it!")
+    print("🛑 To stop: Click the stop button in Colab")
+    print("="*60 + "\n")
+    
+    # Initialize and start polling
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(allowed_updates=Update.ALL_TYPES)
+    
+    # Keep running
+    try:
+        await asyncio.Event().wait()
+    except KeyboardInterrupt:
+        print("\n🛑 Stopping bot...")
+        await application.updater.stop()
+        await application.stop()
+        await application.shutdown()
+
+# ============================================================================
+# RUN THE BOT
+# ============================================================================
+
+if __name__ == '__main__':
+    asyncio.run(main())
